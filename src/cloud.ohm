@@ -1,0 +1,151 @@
+MyLanguage {
+  // ------------------
+  //  Top-level grammar
+  // ------------------
+  
+  Program
+    = (space | comment)*      -- skip leading
+      FuncDecl*               -- zero or more function declarations
+      Expression              -- one expression at the end
+      (space | comment)*      -- skip trailing
+
+
+  FuncDecl
+    = "func" Identifier "(" ParamList? ")" FuncBody
+
+  
+  ParamList
+    = Identifier ("," Identifier)*
+
+  
+  FuncBody
+    = Expression ( ";" Expression )+ "end"
+
+  
+  // We build from highest to lowest:
+  //   Factorial (!) > Unary negation (-) > * / > + - > conditional (if/else)
+  //
+
+  Expression
+    = ConditionalExp
+
+  // Conditional: y if x else z
+  // Lowest precedence, right-associative style
+  ConditionalExp
+    = AddExp "if" AddExp "else" ConditionalExp  -- ifElse
+    | AddExp                                   -- base
+
+  // Additive level: +, -
+  AddExp
+    = AddExp "+" MulExp  -- plus
+    | AddExp "-" MulExp  -- minus
+    | MulExp
+
+  // Multiplicative level: *, /
+  MulExp
+    = MulExp "*" FactorExp  -- times
+    | MulExp "/" FactorExp  -- divide
+    | FactorExp
+
+  // Factorial has higher precedence than unary negation
+  FactorExp
+    = PrefixExp "!"      -- factorial postfix
+    | PrefixExp
+
+  // Unary prefix negation
+  PrefixExp
+    = "-" PrefixExp      -- unary neg
+    | Primary
+
+  // Primary expressions: literals, identifiers, calls, parenthesized expr
+  Primary
+    = NumericLiteral
+    | StringLiteral
+    | FunctionCall
+    | Identifier
+    | "(" Expression ")"
+
+  // --------------------------------
+  //  Function call: id[exprList...]
+  // --------------------------------
+  FunctionCall
+    = Identifier "[" ArgList? "]"
+
+  ArgList
+    = Expression ("," Expression)*
+
+  // -----------------
+  //  Numeric Literals
+  // -----------------
+  // E.g. 123, 3.1415, 1e10, 1.2e-3, etc.
+  
+  NumericLiteral
+    = Digit+ ("." Digit+)? ExponentPart?
+
+  ExponentPart
+    = ("e" | "E") ("+" | "-")? Digit+
+
+  // --------------
+  //  String Literal
+  // --------------
+  // Double-quoted, with certain escapes: \', \", \n, \\ and \u{hex...}
+  
+  StringLiteral
+    = "\"" StringChar* "\""
+
+  StringChar
+    = ~("\"\n" | "\\") any         -- normal characters (not quote, not backslash, not newline)
+    | "\\" EscapeSeq               -- escaped sequence
+
+  EscapeSeq
+    = "'"                           -- \' 
+    | "\""                          -- \"
+    | "n"                           -- \n
+    | "\\"                          -- \\
+    | "u{" HexDigit{1,6} "}"        -- \u{1-6 hex digits}
+
+  HexDigit
+    = digit
+    | "a".."f"
+    | "A".."F"
+
+  // -----------
+  //  Identifiers
+  // -----------
+  // Must start with Letter or '@'; can contain letters, digits, '_', '@', '$'.
+  // Excludes reserved keywords: func, end, if, else.
+  
+  Identifier
+    = ~(keyword) (Letter | "@") (LetterOrDigit | "_" | "@" | "$")*
+
+  // A small set of keywords to exclude from being identifiers.
+  keyword
+    = "func" | "end" | "if" | "else"
+
+  // -------------
+  //  Basic tokens
+  // -------------
+  
+  Letter
+    = "a".."z"
+    | "A".."Z"
+
+  LetterOrDigit
+    = Letter
+    | Digit
+
+  Digit
+    = "0".."9"
+
+  // ---------------
+  //  Whitespace etc.
+  // ---------------
+  
+  // Simple rule for skipping spaces
+  space
+    := " " | "\t" | "\n" | "\r"
+
+  // Comments: '--' until the end of the line
+  comment
+    := "--" (~"\n" any)*
+}

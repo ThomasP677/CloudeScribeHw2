@@ -1,0 +1,16 @@
+func greetAll(people)
+  "Hello " + people;
+  "How are you?"
+end
+
+func factorial(n)
+  n * factorial[n - 1] if n else 1
+  n!
+end
+
+func combine(a, b)
+  (a + b) * 3;
+  (a - b) / 2
+end
+
+(factorial[5] + (combine[-2, 7])) if 10 else greetAll["Everyone"]
